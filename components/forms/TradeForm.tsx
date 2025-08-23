@@ -18,16 +18,22 @@ interface TradeFormProps {
   initialData?: Partial<TradeInput>;
   onSubmit: (data: TradeInput) => Promise<void>;
   onCancel?: () => void;
+  onValidationError?: () => void;
   isLoading?: boolean;
   mode?: 'create' | 'edit';
+  showSubmitButton?: boolean;
+  submitButtonText?: string;
 }
 
 export function TradeForm({ 
   initialData, 
   onSubmit, 
-  onCancel, 
+  onCancel,
+  onValidationError,
   isLoading = false,
-  mode = 'create'
+  mode = 'create',
+  showSubmitButton = true,
+  submitButtonText = 'Save Trade'
 }: TradeFormProps) {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [calculatedMetrics, setCalculatedMetrics] = useState<{
@@ -131,10 +137,13 @@ export function TradeForm({
         screenshots: uploadedFiles,
       };
       await onSubmit(formDataWithFiles as TradeInput);
-      reset();
-      setUploadedFiles([]);
+      if (mode === 'create') {
+        reset();
+        setUploadedFiles([]);
+      }
     } catch (error) {
       console.error('Error submitting trade:', error);
+      onValidationError?.();
     }
   };
 
@@ -591,20 +600,22 @@ export function TradeForm({
         </div>
 
         {/* Submit Buttons */}
-        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-600">
-          {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
+        {showSubmitButton && (
+          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-600">
+            {onCancel && (
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
+            )}
+            <Button
+              type="submit"
+              disabled={!isValid || isLoading}
+              className="min-w-[120px] bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              {isLoading ? 'Saving...' : submitButtonText}
             </Button>
-          )}
-          <Button
-            type="submit"
-            disabled={!isValid || isLoading}
-            className="min-w-[120px]"
-          >
-            {isLoading ? 'Saving...' : mode === 'edit' ? 'Update Trade' : 'Save Trade'}
-          </Button>
-        </div>
+          </div>
+        )}
       </form>
     </div>
   );

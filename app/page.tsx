@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { TradeForm } from '@/components/forms/TradeForm';
+import { MultiTradeForm } from '@/components/forms/MultiTradeForm';
 import { PerformanceCharts } from '@/components/charts/PerformanceCharts';
 import { AnalyticsPage } from '@/components/analytics/AnalyticsPage';
 import { ReportsPage } from '@/components/reports/ReportsPage';
@@ -93,18 +94,43 @@ export default function HomePage() {
     }
   };
 
+  const handleMultiTradeSubmit = async (trades: any[]) => {
+    try {
+      const promises = trades.map(trade => 
+        fetch('/api/trades', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(trade),
+        })
+      );
+
+      const responses = await Promise.all(promises);
+      
+      const failedTrades = responses.filter(response => !response.ok);
+      if (failedTrades.length > 0) {
+        throw new Error(`Failed to create ${failedTrades.length} trade(s)`);
+      }
+
+      // Switch back to dashboard after successful submission
+      setActiveView('dashboard');
+    } catch (error) {
+      console.error('Error creating trades:', error);
+      // Handle error (show toast, etc.)
+    }
+  };
+
   const renderContent = () => {
     switch (activeView) {
       case 'dashboard':
         return <Dashboard userId={mockUser.id} />;
       case 'new-trade':
         return (
-          <div className="max-w-4xl mx-auto">
-            <TradeForm
-              onSubmit={handleTradeSubmit}
-              onCancel={() => setActiveView('dashboard')}
-            />
-          </div>
+          <MultiTradeForm
+            onSubmit={handleMultiTradeSubmit}
+            onCancel={() => setActiveView('dashboard')}
+          />
         );
       case 'analytics':
         return <AnalyticsPage />;
