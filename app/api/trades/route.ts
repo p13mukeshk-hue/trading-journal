@@ -235,8 +235,8 @@ export async function POST(request: NextRequest) {
 // Generate demo trades data - 25 realistic sample trades
 function generateDemoTrades() {
   const currentDate = new Date();
-  const symbols = ['BTC', 'AAPL', 'NIFTY'];
-  const setups = ['Breakout Strategy', 'Mean Reversion', 'Momentum Play', 'Support Bounce', 'Resistance Break', 'Gap Fill', 'Earnings Play', 'Technical Bounce'];
+  const symbols = ['BTC', 'ETH', 'ARB', 'AAVE', 'SOL', 'AAPL', 'NVDA', 'MSFT', 'TSLA', 'NIFTY'];
+  const setups = ['Breakout Strategy', 'Mean Reversion', 'Momentum Play', 'Support Bounce', 'Resistance Break', 'Gap Fill', 'Earnings Play', 'Technical Bounce', 'DeFi Momentum', 'Layer 2 Play'];
   const sides = ['LONG', 'SHORT'];
   
   const trades = [];
@@ -252,7 +252,14 @@ function generateDemoTrades() {
     // Generate realistic prices based on symbol
     let basePrice = 100;
     if (symbol === 'BTC') basePrice = 45000; // Bitcoin price range
+    if (symbol === 'ETH') basePrice = 2500;  // Ethereum price
+    if (symbol === 'ARB') basePrice = 0.8;   // Arbitrum price
+    if (symbol === 'AAVE') basePrice = 300;  // Aave price
+    if (symbol === 'SOL') basePrice = 100;   // Solana price
     if (symbol === 'AAPL') basePrice = 180;  // Apple stock price
+    if (symbol === 'NVDA') basePrice = 900;  // NVIDIA stock price
+    if (symbol === 'MSFT') basePrice = 420;  // Microsoft stock price
+    if (symbol === 'TSLA') basePrice = 250;  // Tesla stock price
     if (symbol === 'NIFTY') basePrice = 19500; // Nifty 50 index level
     
     const entryPrice = basePrice + (Math.random() - 0.5) * (basePrice * 0.1);
@@ -261,10 +268,18 @@ function generateDemoTrades() {
     let quantity;
     if (symbol === 'BTC') {
       quantity = Math.random() * 2 + 0.1; // 0.1 to 2.1 BTC
+    } else if (symbol === 'ETH') {
+      quantity = Math.random() * 10 + 1; // 1 to 11 ETH
+    } else if (symbol === 'ARB') {
+      quantity = Math.floor(Math.random() * 5000) + 500; // 500 to 5500 ARB
+    } else if (symbol === 'AAVE') {
+      quantity = Math.random() * 50 + 5; // 5 to 55 AAVE
+    } else if (symbol === 'SOL') {
+      quantity = Math.floor(Math.random() * 100) + 10; // 10 to 110 SOL
     } else if (symbol === 'NIFTY') {
       quantity = Math.floor(Math.random() * 50) + 25; // 25-75 lots
     } else {
-      quantity = Math.floor(Math.random() * 200) + 10; // 10-210 shares for AAPL
+      quantity = Math.floor(Math.random() * 200) + 10; // 10-210 shares for stocks
     }
     
     const isOpen = i < 2; // First 2 trades are open
@@ -301,10 +316,13 @@ function generateDemoTrades() {
       id: `demo-${i + 1}`,
       symbol,
       side,
-      assetClass: symbol === 'BTC' ? 'CRYPTO' : symbol === 'NIFTY' ? 'INDEX' : 'STOCK',
+      assetClass: ['BTC', 'ETH', 'ARB', 'AAVE', 'SOL'].includes(symbol) ? 'CRYPTO' : 
+                 symbol === 'NIFTY' ? 'INDEX' : 'STOCK',
       entryDate,
       entryPrice: Math.round(entryPrice * 100) / 100,
-      quantity: symbol === 'BTC' ? Math.round(quantity * 10000) / 10000 : quantity,
+      quantity: symbol === 'BTC' ? Math.round(quantity * 10000) / 10000 : 
+               symbol === 'ETH' ? Math.round(quantity * 1000) / 1000 :
+               symbol === 'AAVE' ? Math.round(quantity * 100) / 100 : quantity,
       exitDate,
       exitPrice: exitPrice ? Math.round(exitPrice * 100) / 100 : null,
       pnl: pnl ? Math.round(pnl * 100) / 100 : null,

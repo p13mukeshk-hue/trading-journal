@@ -157,7 +157,14 @@ export function TradeForm({
             <Select {...register('symbol')} className={errors.symbol ? 'border-danger-500' : ''}>
               <option value="">Select asset</option>
               <option value="BTC">Bitcoin (BTC)</option>
+              <option value="ETH">Ethereum (ETH)</option>
+              <option value="ARB">Arbitrum (ARB)</option>
+              <option value="AAVE">Aave (AAVE)</option>
+              <option value="SOL">Solana (SOL)</option>
               <option value="AAPL">Apple Inc. (AAPL)</option>
+              <option value="NVDA">NVIDIA Corp. (NVDA)</option>
+              <option value="MSFT">Microsoft Corp. (MSFT)</option>
+              <option value="TSLA">Tesla Inc. (TSLA)</option>
               <option value="NIFTY">Nifty 50 (NIFTY)</option>
             </Select>
             {errors.symbol && (
