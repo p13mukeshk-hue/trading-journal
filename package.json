@@ -5,13 +5,13 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "server:dev": "nodemon server/index.js",
     "server:start": "node server/index.js",
-    "postbuild": "prisma generate",
+    "postinstall": "prisma generate",
     "docker:build": "docker build -t trading-journal .",
     "docker:run": "docker run -p 3000:3000 trading-journal",
     "vercel:deploy": "vercel --prod"
