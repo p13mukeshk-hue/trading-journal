@@ -1,0 +1,350 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  avatar        String?
+  password      String?
+  provider      String?   // oauth provider
+  providerId    String?   // oauth provider id
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Trading preferences
+  defaultCurrency   String  @default("USD")
+  riskPerTrade      Float   @default(0.02) // 2% default
+  startingCapital   Float?
+  timezone          String  @default("UTC")
+  
+  // Relationships
+  trades            Trade[]
+  portfolios        Portfolio[]
+  tradeSetups       TradeSetup[]
+  goals             Goal[]
+  journalEntries    JournalEntry[]
+  watchlists        Watchlist[]
+  alerts            Alert[]
+  brokerAccounts    BrokerAccount[]
+
+  @@map("users")
+}
+
+model Trade {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Basic trade info
+  symbol          String
+  side            TradeType // LONG, SHORT
+  assetClass      AssetClass // STOCK, FOREX, CRYPTO, OPTIONS, FUTURES
+  
+  // Entry details
+  entryDate       DateTime
+  entryPrice      Float
+  quantity        Float
+  entryFees       Float     @default(0)
+  
+  // Exit details (nullable for open trades)
+  exitDate        DateTime?
+  exitPrice       Float?
+  exitFees        Float     @default(0)
+  
+  // Risk management
+  stopLoss        Float?
+  takeProfit      Float?
+  riskAmount      Float?    // Amount risked on trade
+  
+  // Performance metrics (calculated)
+  pnl             Float?    // Profit/Loss
+  pnlPercent      Float?    // P&L percentage
+  rMultiple       Float?    // R-Multiple (actual profit/loss vs risk)
+  
+  // Trade metadata
+  duration        Int?      // Duration in minutes
+  isOpen          Boolean   @default(true)
+  notes           String?
+  lessons         String?
+  emotionBefore   EmotionLevel?
+  emotionAfter    EmotionLevel?
+  confidence      Int?      @db.SmallInt // 1-10 scale
+  
+  // Market conditions
+  marketCondition MarketCondition?
+  volatility      VolatilityLevel?
+  
+  // File attachments
+  screenshots     Screenshot[]
+  
+  // Relationships
+  tags            TradeTag[]
+  setup           TradeSetup? @relation(fields: [setupId], references: [id])
+  setupId         String?
+  portfolio       Portfolio?  @relation(fields: [portfolioId], references: [id])
+  portfolioId     String?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("trades")
+  @@index([userId, entryDate])
+  @@index([userId, symbol])
+  @@index([userId, isOpen])
+}
+
+model TradeSetup {
+  id          String  @id @default(cuid())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?
+  rules       String? // Trading rules for this setup
+  
+  // Performance tracking
+  totalTrades Int     @default(0)
+  winRate     Float   @default(0)
+  avgReturn   Float   @default(0)
+  profitFactor Float  @default(0)
+  
+  trades      Trade[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("trade_setups")
+  @@unique([userId, name])
+}
+
+model TradeTag {
+  id      String @id @default(cuid())
+  tradeId String
+  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  
+  name    String
+  category TagCategory @default(GENERAL)
+  
+  @@map("trade_tags")
+  @@unique([tradeId, name])
+}
+
+model Screenshot {
+  id      String @id @default(cuid())
+  tradeId String
+  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  
+  url     String
+  caption String?
+  type    ScreenshotType @default(CHART)
+  
+  createdAt DateTime @default(now())
+
+  @@map("screenshots")
+}
+
+model Portfolio {
+  id          String @id @default(cuid())
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?
+  currency    String @default("USD")
+  
+  // Portfolio metrics
+  startingBalance Float
+  currentBalance  Float
+  totalReturn     Float  @default(0)
+  totalReturnPct  Float  @default(0)
+  maxDrawdown     Float  @default(0)
+  
+  trades      Trade[]
+  isDefault   Boolean @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("portfolios")
+  @@unique([userId, name])
+}
+
+model JournalEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  date      DateTime @default(now())
+  title     String
+  content   String
+  mood      EmotionLevel?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("journal_entries")
+}
+
+model Goal {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?
+  targetValue Float
+  currentValue Float    @default(0)
+  unit        String    // %, $, trades, etc.
+  category    GoalCategory
+  targetDate  DateTime?
+  isCompleted Boolean   @default(false)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("goals")
+}
+
+model Watchlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name      String
+  symbols   String[] // Array of symbols
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("watchlists")
+  @@unique([userId, name])
+}
+
+model Alert {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  symbol    String
+  condition AlertCondition
+  value     Float
+  message   String?
+  isActive  Boolean     @default(true)
+  triggered Boolean     @default(false)
+  
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@map("alerts")
+}
+
+model BrokerAccount {
+  id           String @id @default(cuid())
+  userId       String
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  broker       Broker
+  accountId    String
+  accountName  String
+  apiKey       String? // Encrypted
+  secretKey    String? // Encrypted
+  accessToken  String? // Encrypted
+  isActive     Boolean @default(true)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("broker_accounts")
+  @@unique([userId, broker, accountId])
+}
+
+// Enums
+enum TradeType {
+  LONG
+  SHORT
+}
+
+enum AssetClass {
+  STOCK
+  FOREX
+  CRYPTO
+  OPTIONS
+  FUTURES
+  COMMODITY
+}
+
+enum EmotionLevel {
+  VERY_NEGATIVE
+  NEGATIVE
+  NEUTRAL
+  POSITIVE
+  VERY_POSITIVE
+}
+
+enum MarketCondition {
+  TRENDING_UP
+  TRENDING_DOWN
+  RANGING
+  VOLATILE
+  LOW_VOLUME
+}
+
+enum VolatilityLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TagCategory {
+  SETUP
+  STRATEGY
+  MARKET_CONDITION
+  TIME_OF_DAY
+  GENERAL
+}
+
+enum ScreenshotType {
+  CHART
+  ENTRY
+  EXIT
+  ANALYSIS
+  OTHER
+}
+
+enum GoalCategory {
+  PROFIT_TARGET
+  WIN_RATE
+  RISK_MANAGEMENT
+  CONSISTENCY
+  EDUCATION
+}
+
+enum AlertCondition {
+  PRICE_ABOVE
+  PRICE_BELOW
+  VOLUME_ABOVE
+  RSI_ABOVE
+  RSI_BELOW
+}
+
+enum Broker {
+  TD_AMERITRADE
+  INTERACTIVE_BROKERS
+  ALPACA
+  CHARLES_SCHWAB
+  FIDELITY
+  ETRADE
+  ROBINHOOD
+  WEBULL
+  BINANCE
+  COINBASE
+  MANUAL
+}
