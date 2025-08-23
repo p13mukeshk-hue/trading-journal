@@ -332,4 +332,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Start tracking your trades like a pro!** 🚀📊
+**Start tracking your trades like a pro!** 🚀📊# Trading Journal - Live Deployment
