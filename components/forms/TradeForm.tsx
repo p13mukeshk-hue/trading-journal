@@ -80,7 +80,8 @@ export function TradeForm({
 
       // Calculate R-Multiple if risk amount is provided
       if (riskAmount) {
-        metrics.rMultiple = calculateRMultiple(pnlData.pnl, riskAmount);
+        const rMultiple = pnlData.pnl !== null ? calculateRMultiple(pnlData.pnl!, riskAmount) : null;
+        metrics.rMultiple = rMultiple || undefined;
       }
     }
 

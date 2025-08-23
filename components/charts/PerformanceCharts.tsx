@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import { PerformanceMetrics, TradeDistribution, TimeAnalysis, SetupAnalysis } from '@/types/trading';
-import { BarChart3, PieChart as PieIcon, Scatter, Clock, Target, Activity } from 'lucide-react';
+import { BarChart3, PieChart as PieIcon, TrendingUp as ScatterIcon, Clock, Target, Activity, Calendar } from 'lucide-react';
 
 interface PerformanceChartsProps {
   metrics: PerformanceMetrics;
@@ -175,7 +175,7 @@ export function PerformanceCharts({ metrics, timeAnalysis, setupAnalysis, loadin
                       <Tooltip content={<CustomTooltip />} />
                       <Bar
                         dataKey="count"
-                        fill={(entry: any) => entry.pnl >= 0 ? '#22c55e' : '#ef4444'}
+                        fill="#3b82f6"
                         radius={[4, 4, 0, 0]}
                       />
                     </BarChart>
@@ -262,7 +262,7 @@ export function PerformanceCharts({ metrics, timeAnalysis, setupAnalysis, loadin
                       />
                       <Bar
                         dataKey="pnl"
-                        fill={(entry: any) => entry.pnl >= 0 ? '#22c55e' : '#ef4444'}
+                        fill="#3b82f6"
                         radius={[2, 2, 0, 0]}
                       />
                     </BarChart>
@@ -300,7 +300,7 @@ export function PerformanceCharts({ metrics, timeAnalysis, setupAnalysis, loadin
                       />
                       <Bar
                         dataKey="pnl"
-                        fill={(entry: any) => entry.pnl >= 0 ? '#22c55e' : '#ef4444'}
+                        fill="#3b82f6"
                         radius={[2, 2, 0, 0]}
                       />
                     </BarChart>
@@ -388,7 +388,7 @@ export function PerformanceCharts({ metrics, timeAnalysis, setupAnalysis, loadin
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <Scatter className="w-5 h-5" />
+                  <ScatterIcon className="w-5 h-5" />
                   <span>Risk vs Reward</span>
                 </CardTitle>
               </CardHeader>

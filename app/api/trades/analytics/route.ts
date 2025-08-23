@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     // Build where clause for date filtering
     const where: any = { 
-      userId: user.id,
+      userId: userId,
       isOpen: false, // Only include closed trades for analytics
     };
 
@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Generate equity curve
-    let runningBalance = user.startingCapital || 10000;
+    let runningBalance = user?.startingCapital || 10000;
     const equityCurve = trades.map((trade, index) => {
       runningBalance += trade.pnl || 0;
       return {
@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate drawdowns
-    let peak = user.startingCapital || 10000;
+    let peak = user?.startingCapital || 10000;
     equityCurve.forEach(point => {
       if (point.balance > peak) {
         peak = point.balance;
@@ -371,7 +371,7 @@ function generateDemoAnalytics() {
   const totalReturnPercent = ((balance - startBalance) / startBalance) * 100;
   
   // Generate daily P&L data (last 45 days)
-  const dailyPnl = [];
+  const dailyPnl: { date: string; pnl: number; cumulative: number }[] = [];
   let runningPnl = 0;
   
   for (let i = 44; i >= 0; i--) {
@@ -392,7 +392,7 @@ function generateDemoAnalytics() {
     dailyPnl.push({
       date: date.toISOString().split('T')[0],
       pnl: Math.round(dayPnl * 100) / 100,
-      cumulativePnl: Math.round(runningPnl * 100) / 100,
+      cumulative: Math.round(runningPnl * 100) / 100,
     });
   }
   
@@ -434,9 +434,9 @@ function generateDemoAnalytics() {
   
   // Generate drawdown data
   const drawdownData = dailyPnl.map(point => {
-    const maxPnlSoFar = Math.max(...dailyPnl.slice(0, dailyPnl.indexOf(point) + 1).map(p => p.cumulativePnl));
-    const drawdown = maxPnlSoFar > point.cumulativePnl ? 
-      ((maxPnlSoFar - point.cumulativePnl) / (startBalance + maxPnlSoFar)) * 100 : 0;
+    const maxPnlSoFar = Math.max(...dailyPnl.slice(0, dailyPnl.indexOf(point) + 1).map(p => p.cumulative));
+    const drawdown = maxPnlSoFar > point.cumulative ? 
+      ((maxPnlSoFar - point.cumulative) / (startBalance + maxPnlSoFar)) * 100 : 0;
     
     return {
       date: point.date,
@@ -532,44 +532,5 @@ function generateDemoAnalytics() {
         expectancy: 342.56,
       },
     ],
-    timeAnalysis: {
-      // Best performance during market open and close
-      hourly: Array.from({ length: 24 }, (_, hour) => {
-        let basePerformance = 0;
-        // Market open (9:30-11:00 AM EST)
-        if (hour >= 9 && hour <= 11) basePerformance = 200 + Math.random() * 300;
-        // Market close (3:00-4:00 PM EST)  
-        else if (hour >= 15 && hour <= 16) basePerformance = 150 + Math.random() * 250;
-        // Regular trading hours
-        else if (hour >= 9 && hour <= 16) basePerformance = 50 + Math.random() * 150;
-        // After hours
-        else basePerformance = Math.random() * 50;
-        
-        const trades = hour >= 9 && hour <= 16 ? Math.floor(Math.random() * 4) + 1 : 0;
-        const pnl = basePerformance - Math.random() * 100;
-        
-        return {
-          hour,
-          trades,
-          pnl: Math.round(pnl * 100) / 100,
-          wins: Math.floor(trades * 0.6),
-          winRate: trades > 0 ? 60 + (Math.random() - 0.5) * 30 : 0,
-        };
-      }),
-      daily: [
-        { day: 0, dayName: 'Sunday', trades: 0, pnl: 0, wins: 0, winRate: 0 },
-        { day: 1, dayName: 'Monday', trades: 6, pnl: 890.50, wins: 4, winRate: 66.7 },
-        { day: 2, dayName: 'Tuesday', trades: 5, pnl: 1240.20, wins: 3, winRate: 60.0 },
-        { day: 3, dayName: 'Wednesday', trades: 4, pnl: -285.30, wins: 2, winRate: 50.0 },
-        { day: 4, dayName: 'Thursday', trades: 5, pnl: 1580.90, wins: 3, winRate: 60.0 },
-        { day: 5, dayName: 'Friday', trades: 3, pnl: 2490.80, wins: 2, winRate: 66.7 },
-        { day: 6, dayName: 'Saturday', trades: 0, pnl: 0, wins: 0, winRate: 0 },
-      ],
-      monthly: [
-        { month: 7, monthName: 'July', year: 2024, trades: 8, pnl: 2450.80, winRate: 62.5 },
-        { month: 8, monthName: 'August', year: 2024, trades: 15, pnl: 3890.45, winRate: 60.0 },
-        { month: 9, monthName: 'September', year: 2024, trades: 2, pnl: -340.70, winRate: 50.0 },
-      ],
-    },
   };
 }

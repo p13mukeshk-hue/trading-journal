@@ -58,7 +58,7 @@ export function formatNumber(
 }
 
 export function formatDate(date: Date, format = 'short'): string {
-  const options: Intl.DateTimeFormatOptions = {
+  const options: any = {
     short: { year: 'numeric', month: 'short', day: 'numeric' },
     long: { 
       year: 'numeric', 

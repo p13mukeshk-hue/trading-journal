@@ -157,7 +157,7 @@ export function EquityCurve({ data, loading = false, height = 300 }: EquityCurve
                         className="text-xs"
                       />
                       <YAxis
-                        tickFormatter={formatCurrency}
+                        tickFormatter={(value) => formatCurrency(value)}
                         className="text-xs"
                       />
                       <Tooltip content={<CustomTooltip />} />
@@ -211,7 +211,7 @@ export function EquityCurve({ data, loading = false, height = 300 }: EquityCurve
                   className="text-xs"
                 />
                 <YAxis
-                  tickFormatter={formatCurrency}
+                  tickFormatter={(value) => formatCurrency(value)}
                   className="text-xs"
                 />
                 <Tooltip content={<CustomTooltip />} />

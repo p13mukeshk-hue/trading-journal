@@ -224,7 +224,7 @@ function extractAssets(title: string, content: string): string[] {
   if (text.includes('oil') || text.includes('crude')) assets.push('OIL');
   if (text.includes('nifty')) assets.push('NIFTY');
   
-  return [...new Set(assets)]; // Remove duplicates
+  return Array.from(new Set(assets)); // Remove duplicates
 }
 
 function generateRealtimeNews(): NewsItem[] {

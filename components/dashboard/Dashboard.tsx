@@ -84,10 +84,10 @@ export function Dashboard({ userId }: DashboardProps) {
 
       setData({
         metrics,
-        equityCurve: metrics.equityCurve || [],
+        equityCurve: [],
         recentTrades: tradesData.data || [],
-        topPerformingSetups: metrics.setupAnalysis || [],
-        monthlyPnl: metrics.monthlyPnl || [],
+        topPerformingSetups: [],
+        monthlyPnl: [],
         riskMetrics: {
           currentRisk: 0,
           riskPerTrade: 2,

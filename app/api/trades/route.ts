@@ -311,7 +311,7 @@ function generateDemoTrades() {
       pnlPercent: pnlPercent ? Math.round(pnlPercent * 100) / 100 : null,
       isOpen,
       tags: [{ 
-        name: isOpen ? 'Open Position' : (pnl > 0 ? 'Winner' : 'Loser'), 
+        name: isOpen ? 'Open Position' : ((pnl || 0) > 0 ? 'Winner' : 'Loser'), 
         category: 'GENERAL' 
       }],
       setup: { name: setup },
