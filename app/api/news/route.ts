@@ -214,6 +214,8 @@ function extractAssets(title: string, content: string): string[] {
   // Common assets mentioned in news
   if (text.includes('bitcoin') || text.includes('btc')) assets.push('BTC');
   if (text.includes('ethereum') || text.includes('eth')) assets.push('ETH');
+  if (text.includes('arbitrum') || text.includes('arb')) assets.push('ARB');
+  if (text.includes('aave')) assets.push('AAVE');
   if (text.includes('apple') || text.includes('aapl')) assets.push('AAPL');
   if (text.includes('tesla') || text.includes('tsla')) assets.push('TSLA');
   if (text.includes('microsoft') || text.includes('msft')) assets.push('MSFT');

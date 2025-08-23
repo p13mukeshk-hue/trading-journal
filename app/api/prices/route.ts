@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     // Fetch cryptocurrency prices from CoinGecko (free tier)
     try {
       const cryptoResponse = await fetch(
-        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true',
+        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,arbitrum,aave&vs_currencies=usd&include_24hr_change=true',
         { 
           headers: { 'Accept': 'application/json' },
           next: { revalidate: 30 } // Cache for 30 seconds
@@ -56,6 +56,28 @@ export async function GET(request: NextRequest) {
             price: cryptoData.solana.usd,
             change: cryptoData.solana.usd * (cryptoData.solana.usd_24h_change / 100),
             changePercent: cryptoData.solana.usd_24h_change || 0,
+            category: 'crypto'
+          });
+        }
+        
+        if (cryptoData.arbitrum) {
+          assets.push({
+            symbol: 'ARB',
+            name: 'Arbitrum',
+            price: cryptoData.arbitrum.usd,
+            change: cryptoData.arbitrum.usd * (cryptoData.arbitrum.usd_24h_change / 100),
+            changePercent: cryptoData.arbitrum.usd_24h_change || 0,
+            category: 'crypto'
+          });
+        }
+        
+        if (cryptoData.aave) {
+          assets.push({
+            symbol: 'AAVE',
+            name: 'Aave',
+            price: cryptoData.aave.usd,
+            change: cryptoData.aave.usd * (cryptoData.aave.usd_24h_change / 100),
+            changePercent: cryptoData.aave.usd_24h_change || 0,
             category: 'crypto'
           });
         }
@@ -314,6 +336,22 @@ function getFallbackPrices(): PriceData[] {
       price: 95 + (random % 20),
       change: ((random % 50) - 25) / 10,
       changePercent: ((random % 50) - 25) / 5,
+      category: 'crypto'
+    },
+    {
+      symbol: 'ARB',
+      name: 'Arbitrum',
+      price: 1.2 + (random % 10) / 10,
+      change: ((random % 20) - 10) / 100,
+      changePercent: ((random % 40) - 20) / 10,
+      category: 'crypto'
+    },
+    {
+      symbol: 'AAVE',
+      name: 'Aave',
+      price: 280 + (random % 50),
+      change: ((random % 60) - 30) / 5,
+      changePercent: ((random % 60) - 30) / 15,
       category: 'crypto'
     },
     {
