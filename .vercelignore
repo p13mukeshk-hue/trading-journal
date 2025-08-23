@@ -1,0 +1,19 @@
+# Files and directories to ignore during Vercel deployment
+
+# Development files
+.env.local
+.next
+node_modules
+
+# Documentation
+*.md
+!README.md
+
+# Tests
+__tests__
+*.test.js
+*.test.ts
+
+# IDE
+.vscode
+.idea
