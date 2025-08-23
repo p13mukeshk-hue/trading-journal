@@ -128,32 +128,14 @@ export function Dashboard({ userId }: DashboardProps) {
           recoveryFactor: 4.7
         },
         equityCurve: [],
-        recentTrades: [
-          {
-            id: 'demo-1',
-            symbol: 'AAPL',
-            side: 'LONG' as const,
-            entryPrice: 175.50,
-            exitPrice: 182.30,
-            quantity: 50,
-            pnl: 340.00,
-            entryDate: new Date('2024-08-20'),
-            exitDate: new Date('2024-08-21'),
-            assetClass: 'STOCK' as const,
-            isOpen: false
-          }
-        ],
+        recentTrades: [],
         topPerformingSetups: [],
         monthlyPnl: [],
         riskMetrics: {
           currentRisk: 1.2,
           riskPerTrade: 2.0,
           portfolioHeat: 4.8,
-        },
-        timeAnalysis: {
-          hourly: [],
-          daily: [],
-          monthly: []
+          correlation: 0.15,
         },
       });
       setError(null); // Clear error since we have fallback data
