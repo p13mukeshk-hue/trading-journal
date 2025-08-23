@@ -65,22 +65,46 @@ export function MultiTradeForm({ onSubmit, onCancel, isLoading = false }: MultiT
     }
   }, [tabs, activeTabId]);
 
-  const handleTradeComplete = useCallback((tabId: string, tradeData: TradeInput) => {
-    // Update tab status
-    setTabs(prev => prev.map(tab => 
-      tab.id === tabId 
-        ? { ...tab, isCompleted: true, data: tradeData, hasErrors: false }
-        : tab
-    ));
-
-    // Update completed trades
-    const tabIndex = tabs.findIndex(tab => tab.id === tabId);
-    if (tabIndex !== -1) {
-      setCompletedTrades(prev => {
-        const newTrades = [...prev];
-        newTrades[tabIndex] = tradeData;
-        return newTrades;
+  const handleTradeComplete = useCallback(async (tabId: string, tradeData: TradeInput) => {
+    try {
+      // First submit the individual trade to the API
+      const response = await fetch('/api/trades', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tradeData),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to save trade');
+      }
+
+      // Update tab status on success
+      setTabs(prev => prev.map(tab => 
+        tab.id === tabId 
+          ? { ...tab, isCompleted: true, data: tradeData, hasErrors: false }
+          : tab
+      ));
+
+      // Update completed trades
+      const tabIndex = tabs.findIndex(tab => tab.id === tabId);
+      if (tabIndex !== -1) {
+        setCompletedTrades(prev => {
+          const newTrades = [...prev];
+          newTrades[tabIndex] = tradeData;
+          return newTrades;
+        });
+      }
+    } catch (error) {
+      console.error('Error saving trade:', error);
+      // Mark tab as having errors
+      setTabs(prev => prev.map(tab => 
+        tab.id === tabId 
+          ? { ...tab, hasErrors: true, isCompleted: false }
+          : tab
+      ));
+      throw error; // Re-throw so TradeForm can handle it
     }
   }, [tabs]);
 
@@ -93,13 +117,13 @@ export function MultiTradeForm({ onSubmit, onCancel, isLoading = false }: MultiT
   }, []);
 
   const handleSubmitAll = async () => {
-    const validTrades = completedTrades.filter(trade => trade);
-    if (validTrades.length === 0) return;
-    
+    // Since trades are now saved individually when completing each tab,
+    // we just need to call the onSubmit callback to notify parent component
     try {
-      await onSubmit(validTrades);
+      // This will switch back to dashboard or perform any cleanup
+      await onSubmit([]);
     } catch (error) {
-      console.error('Error submitting trades:', error);
+      console.error('Error completing multi-trade session:', error);
     }
   };
 
@@ -141,8 +165,8 @@ export function MultiTradeForm({ onSubmit, onCancel, isLoading = false }: MultiT
                   className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                   disabled={isLoading}
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  Submit All ({getCompletedCount()})
+                  <Check className="w-4 h-4 mr-2" />
+                  Complete Session ({getCompletedCount()})
                 </Button>
               )}
               
@@ -278,10 +302,10 @@ export function MultiTradeForm({ onSubmit, onCancel, isLoading = false }: MultiT
                     <Check className="w-6 h-6 text-green-600" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    Submit {getCompletedCount()} Trades?
+                    Complete Trading Session?
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    This will add all completed trades to your journal.
+                    {getCompletedCount()} trades have been saved successfully. Return to dashboard?
                   </p>
                   <div className="flex space-x-3">
                     <Button
@@ -300,7 +324,7 @@ export function MultiTradeForm({ onSubmit, onCancel, isLoading = false }: MultiT
                       className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
                     >
                       <ArrowRight className="w-4 h-4 mr-2" />
-                      Submit All
+                      Return to Dashboard
                     </Button>
                   </div>
                 </div>

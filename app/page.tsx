@@ -96,27 +96,11 @@ export default function HomePage() {
 
   const handleMultiTradeSubmit = async (trades: any[]) => {
     try {
-      const promises = trades.map(trade => 
-        fetch('/api/trades', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(trade),
-        })
-      );
-
-      const responses = await Promise.all(promises);
-      
-      const failedTrades = responses.filter(response => !response.ok);
-      if (failedTrades.length > 0) {
-        throw new Error(`Failed to create ${failedTrades.length} trade(s)`);
-      }
-
-      // Switch back to dashboard after successful submission
+      // Trades are now saved individually, so this just handles session completion
+      // Switch back to dashboard after successful session completion
       setActiveView('dashboard');
     } catch (error) {
-      console.error('Error creating trades:', error);
+      console.error('Error completing multi-trade session:', error);
       // Handle error (show toast, etc.)
     }
   };
