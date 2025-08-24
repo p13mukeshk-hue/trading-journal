@@ -558,7 +558,7 @@ export function CSVImport({ onImport, onCancel }: CSVImportProps) {
                             {trade.side}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                            {trade.entryDate.toLocaleDateString()}
+                            {trade.entryDate?.toLocaleDateString()}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
                             ${trade.entryPrice.toFixed(2)}

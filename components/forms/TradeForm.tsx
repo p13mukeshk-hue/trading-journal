@@ -54,7 +54,7 @@ export function TradeForm({
   } = useForm<TradeInput>({
     resolver: zodResolver(tradeSchema),
     defaultValues: {
-      entryDate: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD string
+      entryDate: new Date(),
       entryFees: 0,
       exitFees: 0,
       confidence: 5,
