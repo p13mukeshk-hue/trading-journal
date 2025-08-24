@@ -134,25 +134,111 @@ export async function GET(request: NextRequest) {
 
 // POST /api/trades - Create a new trade
 export async function POST(request: NextRequest) {
+  let body: any;
   try {
     const session = await getServerSession();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    let user = null;
+    
+    // If we have a session, get the user
+    if (session?.user?.email) {
+      user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+      });
+      
+      if (!user) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
     }
+    
+    // If no user (demo mode), we'll return success without actually saving to DB
 
-    // Get user
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    body = await request.json();
+    
+    // Convert date strings to Date objects and combine with time safely
+    const processedBody = { ...body };
+    
+    // Process entry date
+    if (body.entryDate) {
+      try {
+        let entryDate: Date;
+        
+        if (body.entryDate instanceof Date) {
+          entryDate = body.entryDate;
+        } else if (typeof body.entryDate === 'string') {
+          // If it's already a full ISO string, use it directly
+          if (body.entryDate.includes('T')) {
+            entryDate = new Date(body.entryDate);
+          } else {
+            // If it's just a date string (YYYY-MM-DD), add time
+            const entryDateStr = body.entryDate + 'T' + (body.entryTime || '12:00') + ':00';
+            entryDate = new Date(entryDateStr);
+          }
+        } else {
+          throw new Error('Invalid entry date type');
+        }
+        
+        if (isNaN(entryDate.getTime())) {
+          throw new Error('Invalid entry date');
+        }
+        processedBody.entryDate = entryDate;
+      } catch (error) {
+        console.error('Entry date processing error:', error, 'Input:', body.entryDate);
+        return NextResponse.json(
+          { error: 'Invalid entry date format' },
+          { status: 400 }
+        );
+      }
     }
-
-    const body = await request.json();
+    
+    // Process exit date
+    if (body.exitDate) {
+      try {
+        let exitDate: Date;
+        
+        if (body.exitDate instanceof Date) {
+          exitDate = body.exitDate;
+        } else if (typeof body.exitDate === 'string') {
+          // If it's already a full ISO string, use it directly
+          if (body.exitDate.includes('T')) {
+            exitDate = new Date(body.exitDate);
+          } else {
+            // If it's just a date string (YYYY-MM-DD), add time
+            const exitDateStr = body.exitDate + 'T' + (body.exitTime || '16:00') + ':00';
+            exitDate = new Date(exitDateStr);
+          }
+        } else {
+          throw new Error('Invalid exit date type');
+        }
+        
+        if (isNaN(exitDate.getTime())) {
+          throw new Error('Invalid exit date');
+        }
+        processedBody.exitDate = exitDate;
+      } catch (error) {
+        console.error('Exit date processing error:', error, 'Input:', body.exitDate);
+        return NextResponse.json(
+          { error: 'Invalid exit date format' },
+          { status: 400 }
+        );
+      }
+    }
+    
+    // Remove time fields from processed data as they're not part of the schema
+    delete processedBody.entryTime;
+    delete processedBody.exitTime;
     
     // Validate input data
-    const validatedData = tradeSchema.parse(body);
+    console.log('Validating data:', JSON.stringify(processedBody, null, 2));
+    let validatedData;
+    try {
+      validatedData = tradeSchema.parse(processedBody);
+    } catch (zodError: any) {
+      console.error('Zod validation error:', zodError);
+      if (zodError.errors) {
+        console.error('Specific errors:', zodError.errors);
+      }
+      throw zodError;
+    }
 
     // Calculate P&L and other metrics if trade is closed
     let calculatedFields: any = {
@@ -183,50 +269,82 @@ export async function POST(request: NextRequest) {
       calculatedFields.duration = duration.minutes;
     }
 
-    // Create the trade
-    const trade = await prisma.trade.create({
-      data: {
+    // Create the trade (if user exists) or return demo response
+    if (user) {
+      // Authenticated user - save to database
+      const trade = await prisma.trade.create({
+        data: {
+          ...validatedData,
+          ...calculatedFields,
+          userId: user.id,
+          tags: validatedData.tags ? {
+            create: validatedData.tags.map(tag => ({
+              name: tag,
+              category: 'GENERAL',
+            }))
+          } : undefined,
+        },
+        include: {
+          tags: true,
+          screenshots: true,
+          setup: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          portfolio: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+      
+      return NextResponse.json({ data: trade }, { status: 201 });
+    } else {
+      // Demo mode - return success response without saving
+      const demoTrade = {
+        id: `demo-${Date.now()}`,
         ...validatedData,
         ...calculatedFields,
-        userId: user.id,
-        tags: validatedData.tags ? {
-          create: validatedData.tags.map(tag => ({
-            name: tag,
-            category: 'GENERAL',
-          }))
-        } : undefined,
-      },
-      include: {
-        tags: true,
-        screenshots: true,
-        setup: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        portfolio: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    return NextResponse.json({ data: trade }, { status: 201 });
+        userId: 'demo-user',
+        tags: validatedData.tags ? validatedData.tags.map(tag => ({
+          id: `tag-${Date.now()}-${tag}`,
+          name: tag,
+          category: 'GENERAL'
+        })) : [],
+        screenshots: [],
+        setup: null,
+        portfolio: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      return NextResponse.json({ data: demoTrade }, { status: 201 });
+    }
   } catch (error) {
     console.error('Error creating trade:', error);
+    console.error('Request body:', JSON.stringify(body, null, 2));
     
-    if (error instanceof Error && error.name === 'ZodError') {
+    if (error instanceof Error) {
+      if (error.name === 'ZodError') {
+        console.error('Validation error details:', error.message);
+        return NextResponse.json(
+          { error: 'Invalid input data', details: error.message },
+          { status: 400 }
+        );
+      }
+      
       return NextResponse.json(
-        { error: 'Invalid input data', details: error.message },
-        { status: 400 }
+        { error: 'Failed to create trade', details: error.message },
+        { status: 500 }
       );
     }
 
     return NextResponse.json(
-      { error: 'Failed to create trade' },
+      { error: 'Failed to create trade', details: 'Unknown error' },
       { status: 500 }
     );
   }

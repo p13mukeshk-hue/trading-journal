@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { TradeInput } from '@/lib/validations/trade';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/components/ui/toast';
 
 interface TradeTab {
   id: string;
@@ -38,6 +39,7 @@ export function MultiTradeForm({ onSubmit, onCancel, isLoading = false }: MultiT
   const [activeTabId, setActiveTabId] = useState('1');
   const [completedTrades, setCompletedTrades] = useState<TradeInput[]>([]);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const { showToast } = useToast();
 
   const addNewTab = useCallback(() => {
     if (tabs.length >= 10) return;
@@ -67,6 +69,8 @@ export function MultiTradeForm({ onSubmit, onCancel, isLoading = false }: MultiT
 
   const handleTradeComplete = useCallback(async (tabId: string, tradeData: TradeInput) => {
     try {
+      console.log('Attempting to save trade:', tradeData); // Debug log
+      
       // First submit the individual trade to the API
       const response = await fetch('/api/trades', {
         method: 'POST',
@@ -76,9 +80,23 @@ export function MultiTradeForm({ onSubmit, onCancel, isLoading = false }: MultiT
         body: JSON.stringify(tradeData),
       });
 
+      console.log('API Response status:', response.status); // Debug log
+
       if (!response.ok) {
-        throw new Error('Failed to save trade');
+        const errorData = await response.text();
+        console.error('API Error:', errorData); // Debug log
+        throw new Error(`Failed to save trade: ${response.status} ${errorData}`);
       }
+
+      const result = await response.json();
+      console.log('Trade saved successfully:', result); // Debug log
+
+      // Show success notification
+      showToast({
+        type: 'success',
+        title: 'Trade saved successfully!',
+        description: `${tradeData.symbol} ${tradeData.side} position has been recorded`,
+      });
 
       // Update tab status on success
       setTabs(prev => prev.map(tab => 
@@ -98,6 +116,14 @@ export function MultiTradeForm({ onSubmit, onCancel, isLoading = false }: MultiT
       }
     } catch (error) {
       console.error('Error saving trade:', error);
+      
+      // Show error notification
+      showToast({
+        type: 'error',
+        title: 'Failed to save trade',
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+      });
+
       // Mark tab as having errors
       setTabs(prev => prev.map(tab => 
         tab.id === tabId 
@@ -106,7 +132,7 @@ export function MultiTradeForm({ onSubmit, onCancel, isLoading = false }: MultiT
       ));
       throw error; // Re-throw so TradeForm can handle it
     }
-  }, [tabs]);
+  }, [tabs, showToast]);
 
   const handleTradeValidationError = useCallback((tabId: string) => {
     setTabs(prev => prev.map(tab => 

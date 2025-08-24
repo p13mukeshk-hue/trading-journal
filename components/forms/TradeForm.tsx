@@ -43,6 +43,7 @@ export function TradeForm({
     riskRewardRatio?: number;
   }>({});
 
+
   const {
     register,
     handleSubmit,
@@ -53,7 +54,7 @@ export function TradeForm({
   } = useForm<TradeInput>({
     resolver: zodResolver(tradeSchema),
     defaultValues: {
-      entryDate: new Date(),
+      entryDate: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD string
       entryFees: 0,
       exitFees: 0,
       confidence: 5,
@@ -64,6 +65,53 @@ export function TradeForm({
 
   const watchedValues = watch();
   const { side, entryPrice, exitPrice, quantity, entryFees, exitFees, stopLoss, takeProfit, riskAmount } = watchedValues;
+
+  // LocalStorage key for persisting form data
+  const storageKey = `trade-form-${mode}`;
+  
+  // Clear localStorage when form is submitted successfully
+  const clearSavedData = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(storageKey);
+    }
+  };
+
+  // Load saved data from localStorage on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && mode === 'create') {
+      const savedData = localStorage.getItem(storageKey);
+      if (savedData && !initialData) {
+        try {
+          const parsedData = JSON.parse(savedData);
+          // Only restore if it's recent (less than 24 hours old)
+          if (parsedData.timestamp && Date.now() - parsedData.timestamp < 24 * 60 * 60 * 1000) {
+            Object.keys(parsedData.data).forEach(key => {
+              if (parsedData.data[key] !== undefined && parsedData.data[key] !== null) {
+                setValue(key as keyof TradeInput, parsedData.data[key]);
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Failed to restore form data:', error);
+        }
+      }
+    }
+  }, [mode, setValue, initialData, storageKey]);
+
+  // Save form data to localStorage on changes (debounced)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && mode === 'create' && Object.keys(watchedValues).some(key => watchedValues[key as keyof TradeInput])) {
+      const timeoutId = setTimeout(() => {
+        const dataToSave = {
+          data: watchedValues,
+          timestamp: Date.now()
+        };
+        localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+      }, 500); // Debounce for 500ms
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [watchedValues, mode, storageKey]);
 
   // Calculate metrics in real-time
   const updateCalculations = useCallback(() => {
@@ -131,15 +179,22 @@ export function TradeForm({
 
   const handleFormSubmit = async (data: TradeInput) => {
     try {
-      // Add uploaded files to form data
+      // Get time values from the form
+      const entryTimeInput = document.getElementById('entryTime') as HTMLInputElement;
+      const exitTimeInput = document.getElementById('exitTime') as HTMLInputElement;
+      
+      // Add uploaded files and time data to form data
       const formDataWithFiles = {
         ...data,
         screenshots: uploadedFiles,
+        entryTime: entryTimeInput?.value || '12:00',
+        exitTime: exitTimeInput?.value || '16:00',
       };
-      await onSubmit(formDataWithFiles as TradeInput);
+      await onSubmit(formDataWithFiles as any);
       if (mode === 'create') {
         reset();
         setUploadedFiles([]);
+        clearSavedData(); // Clear localStorage on successful submission
       }
     } catch (error) {
       console.error('Error submitting trade:', error);
@@ -221,15 +276,23 @@ export function TradeForm({
               <Label htmlFor="entryDate">Entry Date *</Label>
               <Input
                 id="entryDate"
-                type="datetime-local"
-                {...register('entryDate', {
-                  setValueAs: (v) => v ? new Date(v) : undefined
-                })}
+                type="date"
+                {...register('entryDate')}
                 className={errors.entryDate ? 'border-danger-500' : ''}
               />
               {errors.entryDate && (
                 <p className="text-sm text-danger-600">{errors.entryDate.message}</p>
               )}
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="entryTime">Entry Time</Label>
+              <Input
+                id="entryTime"
+                type="time"
+                defaultValue="12:00"
+                className="text-sm"
+              />
             </div>
 
             <div className="space-y-2">
@@ -291,20 +354,28 @@ export function TradeForm({
             <TrendingDown className="w-5 h-5 mr-2 text-danger-600" />
             Exit Details (Optional)
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="space-y-2">
               <Label htmlFor="exitDate">Exit Date</Label>
               <Input
                 id="exitDate"
-                type="datetime-local"
-                {...register('exitDate', {
-                  setValueAs: (v) => v ? new Date(v) : undefined
-                })}
+                type="date"
+                {...register('exitDate')}
                 className={errors.exitDate ? 'border-danger-500' : ''}
               />
               {errors.exitDate && (
                 <p className="text-sm text-danger-600">{errors.exitDate.message}</p>
               )}
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="exitTime">Exit Time</Label>
+              <Input
+                id="exitTime"
+                type="time"
+                defaultValue="16:00"
+                className="text-sm"
+              />
             </div>
 
             <div className="space-y-2">

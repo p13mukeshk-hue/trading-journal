@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { TradeForm } from '@/components/forms/TradeForm';
 import { MultiTradeForm } from '@/components/forms/MultiTradeForm';
+import { ToastProvider } from '@/components/ui/toast';
 import { PerformanceCharts } from '@/components/charts/PerformanceCharts';
 import { AnalyticsPage } from '@/components/analytics/AnalyticsPage';
 import { ReportsPage } from '@/components/reports/ReportsPage';
+import { TradeHistory } from '@/components/history/TradeHistory';
 import { PriceTicker } from '@/components/ticker/PriceTicker';
 import { NewsScroller } from '@/components/news/NewsScroller';
 import { Button } from '@/components/ui/button';
@@ -21,7 +23,8 @@ import {
   Sun,
   Moon,
   Menu,
-  X
+  X,
+  Clock
 } from 'lucide-react';
 
 // Mock user - in real app this would come from authentication
@@ -32,7 +35,7 @@ const mockUser = {
   startingCapital: 10000,
 };
 
-type ActiveView = 'dashboard' | 'new-trade' | 'analytics' | 'reports' | 'settings';
+type ActiveView = 'dashboard' | 'new-trade' | 'history' | 'analytics' | 'reports' | 'settings';
 
 export default function HomePage() {
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
@@ -54,6 +57,11 @@ export default function HomePage() {
       name: 'New Trade',
       key: 'new-trade' as const,
       icon: Plus,
+    },
+    {
+      name: 'Trade History',
+      key: 'history' as const,
+      icon: Clock,
     },
     {
       name: 'Analytics',
@@ -116,6 +124,8 @@ export default function HomePage() {
             onCancel={() => setActiveView('dashboard')}
           />
         );
+      case 'history':
+        return <TradeHistory userId={mockUser.id} />;
       case 'analytics':
         return <AnalyticsPage />;
       case 'reports':
@@ -175,7 +185,8 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <ToastProvider>
+      <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -286,5 +297,6 @@ export default function HomePage() {
         </main>
       </div>
     </div>
+    </ToastProvider>
   );
 }

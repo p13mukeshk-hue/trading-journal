@@ -1,6 +1,37 @@
 import { z } from 'zod';
 import { TradeType, AssetClass, EmotionLevel, MarketCondition, VolatilityLevel } from '@prisma/client';
 
+// Helper function for safe date parsing
+const createDateSchema = (isOptional = false, fieldName = 'date') => {
+  return z.union([
+    z.date(),
+    z.string().transform((str, ctx) => {
+      // Handle empty strings
+      if (!str || str.trim() === '') {
+        if (isOptional) {
+          return undefined;
+        }
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${fieldName} is required`
+        });
+        return z.NEVER;
+      }
+      
+      // Try to parse the date
+      const date = new Date(str);
+      if (isNaN(date.getTime())) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Please enter a valid ${fieldName.toLowerCase()}`
+        });
+        return z.NEVER;
+      }
+      return date;
+    })
+  ]);
+};
+
 export const tradeSchema = z.object({
   symbol: z.string()
     .min(1, 'Symbol is required')
@@ -15,10 +46,7 @@ export const tradeSchema = z.object({
     errorMap: () => ({ message: 'Please select an asset class' })
   }),
   
-  entryDate: z.date({
-    required_error: 'Entry date is required',
-    invalid_type_error: 'Please enter a valid date'
-  }),
+  entryDate: createDateSchema(false, 'Entry date'),
   
   entryPrice: z.number()
     .positive('Entry price must be positive')
@@ -33,9 +61,7 @@ export const tradeSchema = z.object({
     .finite('Entry fees must be a valid number')
     .optional(),
   
-  exitDate: z.date({
-    invalid_type_error: 'Please enter a valid exit date'
-  }).optional(),
+  exitDate: createDateSchema(true, 'Exit date').optional(),
   
   exitPrice: z.number()
     .positive('Exit price must be positive')
@@ -158,10 +184,7 @@ const baseTradeSchema = z.object({
     errorMap: () => ({ message: 'Please select an asset class' })
   }),
   
-  entryDate: z.date({
-    required_error: 'Entry date is required',
-    invalid_type_error: 'Please enter a valid date'
-  }),
+  entryDate: createDateSchema(false, 'Entry date'),
   
   entryPrice: z.number()
     .positive('Entry price must be positive')
@@ -176,9 +199,7 @@ const baseTradeSchema = z.object({
     .finite('Entry fees must be a valid number')
     .optional(),
   
-  exitDate: z.date({
-    invalid_type_error: 'Please enter a valid exit date'
-  }).optional(),
+  exitDate: createDateSchema(true, 'Exit date').optional(),
   
   exitPrice: z.number()
     .positive('Exit price must be positive')
